@@ -8,9 +8,7 @@
 
 import Foundation
 
-import Foundation
-
-protocol Mappable: Decodable {
+protocol Mappable: Codable, Equatable {
     init?(data: Data)
 }
 

@@ -13,17 +13,13 @@ struct AccessToken: Mappable {
     var access_token = ""
     
     init?(data: Data) {
-        
-        do {
-            let tokenDecoded = try JSONDecoder().decode(AccessToken.self, from: data)
-            print(tokenDecoded)
-        } catch let error {
-            print(error.localizedDescription)
-        }
-        
         guard let tokenDecoded = try? JSONDecoder().decode(AccessToken.self, from: data) else {
             return nil
         }
         access_token = tokenDecoded.access_token
+    }
+    
+    static func == (lhs: AccessToken, rhs: AccessToken) -> Bool {
+        return lhs.access_token == rhs.access_token
     }
 }

@@ -79,6 +79,7 @@ class HomeViewModel: HomeViewModelDelegate {
     func refresh() {
         games = [Game]()
         canLoad = true
+        loadFavorites()
         getGames()
     }
     

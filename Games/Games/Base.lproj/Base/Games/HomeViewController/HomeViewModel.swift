@@ -9,6 +9,7 @@
 import Foundation
 import UIKit
 import AudioToolbox
+import CoreData
 
 struct GameDTO {
     var id = 0
@@ -24,6 +25,9 @@ protocol LoadContent: class {
 }
 
 protocol HomeViewModelDelegate: class {
+    
+    var canLoad: Bool { get }
+    
     func getGames()
     func refresh()
     func numberOfSections() -> Int
@@ -33,14 +37,14 @@ protocol HomeViewModelDelegate: class {
     func getImage(at row: Int) -> UIImage?
     func imageFromCache(identifier: String) -> UIImage?
     func sizeForItems(with width: CGFloat, height: CGFloat) -> CGSize
-    func didFavorite(with id: Int, shouldFavorite: Bool)
+    func didFavorite(with id: Int, shouldFavorite: Bool, imageData: Data?)
 }
 
 class HomeViewModel: HomeViewModelDelegate {
     
+    var games = [Game]()
+    var canLoad = true
     private var cache = NSCache<NSString, UIImage>()
-    private var canLoad = true
-    private var games = [Game]()
     private var favorites = [Game]()
     private var token = ""
     private weak var loadContentDelegate: LoadContent?
@@ -48,7 +52,10 @@ class HomeViewModel: HomeViewModelDelegate {
     init(delegate: LoadContent) {
         self.loadContentDelegate = delegate
         loadContent()
+        loadFavorites()
     }
+    
+    init() { }
     
     private func loadContent() {
         if token.isEmpty {
@@ -56,14 +63,16 @@ class HomeViewModel: HomeViewModelDelegate {
                 if error == nil {
                     self.token = accessToken?.access_token ?? ""
                     self.getGames()
-                    self.loadFavorites()
                 } else {
+                    if self.games.count == 0 {
+                        self.favorites.forEach { self.games.append($0) }
+                    }
+                    self.canLoad = false
                     self.loadContentDelegate?.feedback(error: error?.message)
                 }
             })
         } else {
             getGames()
-            self.loadFavorites()
         }
     }
     
@@ -78,6 +87,11 @@ class HomeViewModel: HomeViewModelDelegate {
             GameRequest(accessToken: token, offset: games.count).request { gameResult, error in
                 gameResult?.top.forEach { self.games.append($0) }
                 self.canLoad = gameResult?.total != self.games.count
+                
+                if (gameResult?.top.count == 0 || gameResult?.top == nil) && self.games.count == 0 && self.favorites.count > 0 {
+                    self.favorites.forEach { self.games.append($0) }
+                    self.canLoad = false
+                }
                 self.loadContentDelegate?.feedback(error: error?.message)
             }
         }
@@ -111,6 +125,10 @@ class HomeViewModel: HomeViewModelDelegate {
     }
     
     func getImage(at row: Int) -> UIImage? {
+        if let imageData = games.object(index: row)?.game?.box?.imageData, let image = UIImage(data: imageData) {
+            return image
+        }
+        
         let imageString = games.object(index: row)?.game?.box?.large ?? ""
         if let imageCached = cache.object(forKey: NSString(string: imageString)) {
             return imageCached
@@ -138,17 +156,14 @@ class HomeViewModel: HomeViewModelDelegate {
     }
     
     func loadFavorites() {
-        guard let array = LocalDataBase().load(object: Game.self) else {
-            return
-        }
-        favorites = array
+        favorites = FavoriteManager().loadGames()
     }
     
     func isFavorite(id: Int) -> Bool {
         return favorites.filter { $0.game?._id == id }.count > 0
     }
     
-    func didFavorite(with id: Int, shouldFavorite: Bool) {
+    func didFavorite(with id: Int, shouldFavorite: Bool, imageData: Data?) {
         let pop = SystemSoundID(1520)
         AudioServicesPlaySystemSound(pop)
         
@@ -157,12 +172,12 @@ class HomeViewModel: HomeViewModelDelegate {
             return
         }
         
+        var favorite = game
+        favorite.game?.box?.imageData = imageData
         if shouldFavorite {
-            LocalDataBase().save(object: game)
-            favorites.append(game)
+            FavoriteManager.save(favorite: favorite)
         } else {
-            LocalDataBase().remove(object: game)
-            favorites = favorites.filter { id != $0.game?._id }
+            FavoriteManager.remove(favorite: favorite)
         }
     }
 }

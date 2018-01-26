@@ -18,6 +18,8 @@ struct Game: Mappable {
         
     }
     
+    init() { }
+    
     static func == (lhs: Game, rhs: Game) -> Bool {
         return lhs.game == rhs.game && lhs.viewers == rhs.viewers && lhs.channels == rhs.channels
     }

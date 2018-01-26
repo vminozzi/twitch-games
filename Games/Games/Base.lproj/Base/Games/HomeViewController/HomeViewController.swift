@@ -51,17 +51,14 @@ class HomeViewController: UICollectionViewController, UICollectionViewDelegateFl
     
     // MARK: - LoadContent
     func feedback(error: String?) {
-        dismissLoader()
-        DispatchQueue.main.async {
-            self.refresher.endRefreshing()
-        }
-        
         if let errorMessage = error {
             showDefaultAlert(message: errorMessage, completeBlock: nil)
-        } else {
-            DispatchQueue.main.async {
-                self.collectionView?.reloadData()
-            }
+        }
+        
+        DispatchQueue.main.async {
+            self.dismissLoader()
+            self.refresher.endRefreshing()
+            self.collectionView?.reloadData()
         }
     }
     
@@ -91,7 +88,7 @@ class HomeViewController: UICollectionViewController, UICollectionViewDelegateFl
         let cell = GameCell.createCell(collectionView: collectionView, indexPath: indexPath) as GameCell
         cell.delegate = self
         cell.fill(with: viewModel.getGameDTO(at: indexPath.row))
-        if indexPath.row == viewModel.numberOfItems() - 1 {
+        if indexPath.row == viewModel.numberOfItems() - 1 && viewModel.canLoad {
             showLoader()
             viewModel.getGames()
         }
@@ -119,7 +116,7 @@ class HomeViewController: UICollectionViewController, UICollectionViewDelegateFl
     
     
     // MARK: - GameCellDelegate
-    func didFavorite(with id: Int, shouldFavorite: Bool) {
-        viewModel.didFavorite(with: id, shouldFavorite: shouldFavorite)
+    func didFavorite(with id: Int, shouldFavorite: Bool, imageData: Data?) {
+        viewModel.didFavorite(with: id, shouldFavorite: shouldFavorite, imageData: imageData)
     }
 }

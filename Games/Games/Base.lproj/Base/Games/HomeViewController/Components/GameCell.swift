@@ -9,7 +9,7 @@
 import UIKit
 
 protocol GameCellDelegate: class {
-    func didFavorite(with id: Int, shouldFavorite: Bool)
+    func didFavorite(with id: Int, shouldFavorite: Bool, imageData: Data?)
 }
 
 class GameCell: UICollectionViewCell {
@@ -45,8 +45,15 @@ class GameCell: UICollectionViewCell {
         favoriteButton.isSelected = favorite
     }
     
+    private func prepareImageData(image: UIImage?) -> Data? {
+        guard let image = image, let imageData = UIImagePNGRepresentation(image) else {
+            return nil
+        }
+        return imageData
+    }
+    
     @IBAction func favorite(_ sender: UIButton) {
-        delegate?.didFavorite(with: id, shouldFavorite: !sender.isSelected)
+        delegate?.didFavorite(with: id, shouldFavorite: !sender.isSelected, imageData: prepareImageData(image: poster.image))
         sender.isSelected = !sender.isSelected
     }
 }

@@ -7,39 +7,24 @@
 //
 
 import Foundation
+import CoreData
 
-class LocalDataBase {
+class LocalDataBase: NSManagedObject {
     
-    private let userDefault = UserDefaults.standard
+    lazy var persistentContainer: NSPersistentContainer = {
+        let container = NSPersistentContainer(name: "Favorite")
+        container.loadPersistentStores(completionHandler: { (storeDescription, error) in
+            if let error = error as NSError? {
+                fatalError("error \(error), \(error.userInfo)")
+            }
+        })
+        return container
+    }()
     
-    func save<T: Mappable>(object: T) {
-        let key = "Games.\(String(describing: T.self))"
-        
-        var array = [T]()
-        if let data = userDefault.data(forKey: key), let decoded = try? JSONDecoder().decode([T].self, from: data) {
-            array = decoded
+    func saveContext () {
+        let context = persistentContainer.viewContext
+        if context.hasChanges {
+            try? context.save()
         }
-        array.append(object)
-        let encoded = try? JSONEncoder().encode(array)
-        userDefault.set(encoded, forKey: key)
-    }
-    
-    func remove<T: Mappable>(object: T) {
-        let key = "Games.\(String(describing: T.self))"
-        guard let data = userDefault.data(forKey: key), let decoded = try? JSONDecoder().decode([T].self, from: data) else {
-            return
-        }
-        
-        let array = decoded.filter { $0 != object }
-        let encoded = try? JSONEncoder().encode(array)
-        userDefault.set(encoded, forKey: key)
-    }
-    
-    func load<T: Mappable>(object: T.Type) -> [T]? {
-        let key = "Games.\(String(describing: T.self))"
-        guard let data = userDefault.data(forKey: key) else {
-            return nil
-        }
-        return try? JSONDecoder().decode([T].self, from: data)
     }
 }

@@ -21,6 +21,8 @@ struct GameModel: Mappable {
         
     }
     
+    init() { }
+    
     static func == (lhs: GameModel, rhs: GameModel) -> Bool {
         return lhs.name == rhs.name && lhs.popularity == rhs.popularity && lhs._id == rhs._id && lhs.giantbomb_id == rhs.giantbomb_id && lhs.locale == rhs.locale && lhs.box == rhs.box
     }
